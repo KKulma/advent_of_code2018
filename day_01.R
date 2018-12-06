@@ -2,6 +2,7 @@ library(stringr)
 library(dplyr)
 
 ## first challenge ####
+# get in the series of changes
 
 changes <- '
   +11
@@ -1042,11 +1043,11 @@ changes <- '
   +113294'
 
 # separate a character string into a vector of character numbers with + or -  
-base<-strsplit(changes, '\t') %>%
-  str_replace_all('\n', '') %>% 
-  stringr::str_trim() %>% 
-  strsplit(' ') %>% 
-  unlist()
+base<-strsplit(changes, '\t') %>% # splt by Tab
+  str_replace_all('\n', '') %>% # remove all new lines
+  stringr::str_trim() %>% # trim edges
+  strsplit(' ') %>% # split by spaces
+  unlist() # get to vector format
 base
 
 # check if it is a vector  
@@ -1059,29 +1060,13 @@ base[nchar(base)>0] %>% # remove empty char strings
 
 ## second challenge ####
 # testing example
-ex1 <- c(-6, +3, +8, +5, -6)
-ex1
 
-rep(ex1, 2)
-
-df_ex <- data.frame(series = c(0,rep(ex1, 2))) %>% 
-  mutate(cumsum = cumsum(series))
-df_ex
-
-any(table(df_ex$cumsum)>1)
-
-repeat {   
-  response <- as.integer(readinteger());
-  if (response == 42) {
-    print("Well done!");
-    break
-  } else print("Sorry, the answer to whatever the question MUST be 42");
-}
 
 ex1 <- c(-6, +3, +8, +5, -6)
-df_ex <- data.frame(series = c(0,ex1))
+df_ex <- data.frame(series = c(0,ex1)) # remember to add 0 at the start of the series!
 
 repeat {
+# check if any values appear more than once  
   df_sol <-  df_ex %>% 
     mutate(cumsum = cumsum(series))
   ex_tbl <- table(df_sol$cumsum) 
@@ -1089,10 +1074,13 @@ repeat {
   if (any(ex_tbl>1)) {
     print(ex_tbl);
     break
+    
+    
+    #if not, just add another series 
   } else {
     df_ex <- rbind(df_ex, data.frame(series = ex1))
   }
-}
+} # works!
 
 ## apply solution to the challenge
 
@@ -1112,5 +1100,5 @@ repeat {
   } else {
     df_ch <- rbind(df_ch, data.frame(series = ch1))
   }
-}
+} # takes a while and then returns gazillion examples of repeated values..
 
