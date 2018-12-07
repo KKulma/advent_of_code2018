@@ -1,3 +1,7 @@
+library(dplyr)
+library(stringr)
+library(purrr)
+
 
 #### first challenge #####
 
@@ -252,7 +256,92 @@ xregqmkonskvzuqalfiwhjptdb
 xregqmyonskvvxpalfiwhactdb
 xregqmyonskvzupsliiwhwctdb'
 
+# check raw input
 head(input)
-clean_input =  strsplit(input, '\n') %>% unlist()
-df2 <- data.frame(input = clean_input)  # splt by NewLine
+
+# clean it
+clean_input =  strsplit(input, '\n') %>% unlist()   # splt by NewLine
+
+# put it in the data.frame
+df2 <- data.frame(input = clean_input) %>% 
+  mutate(input = str_trim(input))
+
+# factors to characters
+df2$input <- as.character(df2$input)
+
+glimpse(df2)
 head(clean_input)
+
+
+# test: counting double letter occurances 
+strsplit(input, '\n') %>% unlist() %>% .[[1]] %>% # get the first example 
+  strsplit('') %>% # split letters
+  unlist() %>% 
+  as_tibble() %>% # trasform vector to tibble
+  rename_(letters = names(.)[1]) %>% 
+  count(letters) %>% # count letter occurances
+  filter(n == 2) %>% 
+  nrow()
+
+# test: counting triple letter occurances 
+strsplit(input, '\n') %>% unlist() %>% .[[1]] %>% # get the first example
+  strsplit('') %>% # split letters
+  unlist() %>% 
+  as_tibble() %>% # trasforming vector to tibble
+  rename_(letters = names(.)[1]) %>% 
+  count(letters) %>% 
+  filter(n == 3) %>% 
+  nrow()
+
+
+### wrap-up in functions
+# count double occurances 
+count2 <- function(x) {
+  result2 <-  as.character(x) %>% 
+    as.vector() %>% 
+    strsplit('') %>% # split by letters
+    unlist() %>% 
+    as_tibble() %>% # trasforming vector to tibble
+    rename_(letters = names(.)[1]) %>% 
+    count(letters) %>% # count letter occurances
+    filter(n == 2) %>% 
+    nrow()
+  return(result2)
+}
+
+
+# count triple occurances 
+count3 <- function(x) {
+  result2 <-  as.character(x) %>% 
+    strsplit('') %>% 
+    unlist() %>% 
+    as_tibble() %>% # trasforming vector to tibble
+    rename_(letters = names(.)[1]) %>% 
+    count(letters) %>% 
+    filter(n == 3) %>% 
+    nrow()
+  return(result2)
+}
+
+
+### apply functions to input
+occurs2 <- map_int(df2$input, count2)
+occurs3 <- map_int(df2$input, count3)
+
+
+# solution
+sol2 <- cbind(df2, occurs2, occurs3) %>% 
+  select(-input) %>% 
+  colSums()
+
+sol2[1]*sol2[2]
+
+
+## dplyr solution - doesn't work
+# it works when df filtered to a single row
+# when applied to the whole df, it returns 0's everywhere
+df2 %>%
+  filter(row_number() == 20) %>% 
+  #head(1) %>% 
+  #mutate(map_df(input)
+  mutate(occurs2 = count2(input))
