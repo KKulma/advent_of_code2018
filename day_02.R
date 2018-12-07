@@ -298,7 +298,6 @@ strsplit(input, '\n') %>% unlist() %>% .[[1]] %>% # get the first example
 # count double occurances 
 count2 <- function(x) {
   result2 <-  as.character(x) %>% 
-    as.vector() %>% 
     strsplit('') %>% # split by letters
     unlist() %>% 
     as_tibble() %>% # trasforming vector to tibble
@@ -329,12 +328,14 @@ occurs2 <- map_int(df2$input, count2)
 occurs3 <- map_int(df2$input, count3)
 
 
-# solution
-sol2 <- cbind(df2, occurs2, occurs3) %>% 
-  select(-input) %>% 
-  colSums()
+# solution ####
+sol2 <-cbind(df2, occurs2, occurs3)
+sol2
 
-sol2[1]*sol2[2]
+
+nrow(sol2[sol2$occurs2 != 0, ]) * nrow(sol2[sol2$occurs3 != 0, ])
+
+
 
 
 ## dplyr solution - doesn't work
