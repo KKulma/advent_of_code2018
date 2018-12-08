@@ -1,6 +1,7 @@
 library(dplyr)
 library(stringr)
 library(readr)
+library(purrr)
 
 raw_input <- '
 #1 @ 850,301: 23x12
@@ -1382,13 +1383,111 @@ input <- raw_input %>%
 # separate and clean dimension figures 
 clean_input <- as.data.frame(input) %>%  
   mutate(ID = str_extract(input, '#[:digit:]+'), # extract ID 
-         r_sqaure = str_extract(input, '@..?[:digit:]+\\,'), # extract right squares
-         t_square = str_extract(input, '\\,[:digit:]+\\:'), # extract top square
-         left_dim = str_extract(input, '[:digit:]+x'), # extract left dimension
-         right_dim = str_extract(input, 'x[:digit:]+')# extract right dimension
+         from_left_edge = str_extract(input, '@..?[:digit:]+\\,'), # extract right squares
+         from_top_endge = str_extract(input, '\\,[:digit:]+\\:'), # extract top square
+         width = str_extract(input, '[:digit:]+x'), # extract left dimension
+         height = str_extract(input, 'x[:digit:]+')# extract right dimension
   ) %>% 
   as_tibble() %>% 
   mutate_if(is.character, readr::parse_number) 
+
+
+clean_input
+
+## example 
+
+ex3 <- '#1 @ 1,3: 4x4
+#2 @ 3,1: 4x4
+#3 @ 5,5: 2x2'
     
-    
-    
+ex3_input <- ex3 %>%
+  strsplit('\n') %>% 
+  unlist() %>% 
+  as.data.frame()
+
+names(ex3_input) <- 'input'
+
+clean_df <- ex3_input %>% 
+  mutate(ID = str_extract(input, '#[:digit:]+'), # extract ID 
+         from_left_edge = str_extract(input, '@..?[:digit:]+\\,'), # extract right squares
+         from_top_endge = str_extract(input, '\\,[:digit:]+\\:'), # extract top square
+         width = str_extract(input, '[:digit:]+x'), # extract left dimension
+         height = str_extract(input, 'x[:digit:]+')# extract right dimension
+  ) %>% 
+  as_tibble() %>% 
+  mutate_if(is.character, readr::parse_number) 
+
+# try to solve using examples ####S
+
+from_left_edge1 = 1
+from_top_endge1 = 3
+width1 = 4
+height1 = 4
+
+
+claim1 <- as.vector(outer(from_left_edge + 1:width,
+      from_top_endge + 1:height,
+      paste, sep = '.'))
+
+from_left_edge2 = 3
+from_top_endge2 = 1
+width2 = 4
+height2 = 4
+
+
+claim2 <- as.vector(outer(from_left_edge2 + 1:width2,
+                          from_top_endge2 + 1:height2,
+                          paste, sep = '.'))
+claim2
+
+
+### test the solution
+
+#function that creates coordicates of squares occupied by each claim
+get_dimensions <- function(from_left_edge,
+                           width,
+                           from_top_endge,
+                           height
+) {
+  
+  dims <- as.vector(outer(from_left_edge + 1:width,
+                          from_top_endge + 1:height,
+                          paste, sep = '.')) 
+  return(dims)
+  
+}
+
+ex3_list <- pmap(list(from_left_edge = clean_df$from_left_edge,
+                            width = clean_df$width,
+                            from_top_endge = clean_df$from_top_endge,
+                            height = clean_df$height),
+                       get_dimensions)
+
+glimpse(ex3_list)
+
+## solution
+ex3_list%>% 
+  unlist() %>% 
+  table() %>% 
+  as_tibble() %>% 
+  filter(n > 1) %>%  
+  nrow()
+
+# final solution ####
+
+final_list <- pmap(list(from_left_edge = clean_input$from_left_edge,
+                      width = clean_input$width,
+                      from_top_endge = clean_input$from_top_endge,
+                      height = clean_input$height),
+                 get_dimensions)
+
+glimpse(final_list)
+
+## final solution
+final_list%>% 
+  unlist() %>% 
+  table() %>% 
+  as_tibble() %>% 
+  filter(n > 1) %>%  
+  nrow() 
+
