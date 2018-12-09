@@ -2,6 +2,8 @@ library(lubridate)
 library(dplyr)
 library(stringr)
 library(purrr)
+library(tidyr)
+library(zoo)
 
 ## input data ####
 
@@ -1180,12 +1182,41 @@ raw_input <- '[1518-09-28 00:56] wakes up
 
 glimpse(raw_input)
 
+??tidyr::fill
+df <- data.frame(Month = 1:12, Year = c(2000, rep(NA, 11)))
+df
+df %>% fill(Year)
+
+?na.locf
+
 # clean the input
-raw_input %>% 
+clean_input <- raw_input %>% 
   strsplit('\n') %>% 
   unlist() %>% 
   as_tibble() %>% 
   mutate(timestamp = ymd_hm(str_extract(value, '[:digit:]+-[:digit:]+-[:digit:]+..[:digit:]+:[:digit:]+')),
          action = str_extract(value, '[:alpha:]+..[:alpha:]+'),
-         guard_num = ifelse(str_detect(value, '#'), str_extract(value, '#[:digit:]+'), NA)
-  )
+         guard_num = ifelse(str_detect(value, '#'), str_extract(value, '#[:digit:]+'), NA),
+         date = ymd(str_sub(timestamp, start = 1, end = 10)),
+         minute = minute(timestamp)
+  ) %>%
+  arrange(timestamp) %>% 
+  fill(guard_num) # fill in missing guard numbers 
+
+head(clean_input)
+
+# who sleeps most 
+clean_input %>% 
+  filter(action != 'Guard') %>%
+  group_by(guard_num, date) %>% 
+  mutate(time_asleep = ifelse(action == 'wakes up', minute - lag(minute), NA )
+  ) %>% 
+  group_by(guard_num) %>% 
+  na.omit() %>% 
+  summarise(total_asleep = sum(time_asleep)) %>%  
+  arrange(desc(total_asleep)) %>% 
+  head(1)
+  
+
+
+?spread
