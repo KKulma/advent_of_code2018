@@ -1182,12 +1182,6 @@ raw_input <- '[1518-09-28 00:56] wakes up
 
 glimpse(raw_input)
 
-??tidyr::fill
-df <- data.frame(Month = 1:12, Year = c(2000, rep(NA, 11)))
-df
-df %>% fill(Year)
-
-?na.locf
 
 # clean the input
 clean_input <- raw_input %>% 
@@ -1209,14 +1203,43 @@ head(clean_input)
 clean_input %>% 
   filter(action != 'Guard') %>%
   group_by(guard_num, date) %>% 
-  mutate(time_asleep = ifelse(action == 'wakes up', minute - lag(minute), NA )
+  mutate(time_asleep = ifelse(action == 'wakes up', minute - lag(minute), NA ) #calculate time asleep
   ) %>% 
   group_by(guard_num) %>% 
   na.omit() %>% 
-  summarise(total_asleep = sum(time_asleep)) %>%  
+  summarise(total_asleep = sum(time_asleep)) %>%  # sum it
   arrange(desc(total_asleep)) %>% 
   head(1)
   
 
+# what's the most common time to sleep
 
-?spread
+guard_data <- clean_input %>% 
+  filter(action != 'Guard') %>% 
+  filter(guard_num == '#409') %>% # pick the winner
+  arrange(timestamp) %>% 
+  spread(action, minute) %>% # prep the data for sequences
+  rename(falls_asleep = `falls asleep`,
+         wakes_up = `wakes up`) %>% 
+  mutate(falls_asleep = ifelse(!is.na(wakes_up), lag(falls_asleep), falls_asleep )) %>% 
+  na.omit()
+
+# function that generates sequence of minutes between falling asslep and waking up  
+time_seq <- function(falls, wakes) {
+  result <- seq(falls, wakes)
+  return(result)
+}
+
+# test the function
+time_seq(guard_data$falls_asleep[1], guard_data$wakes_up[1])
+
+# apply the funtion to the #409 guard's data
+pmap(list(guard_data$falls_asleep,
+          guard_data$wakes_up
+          ), time_seq) %>% 
+  unlist() %>% 
+  table() %>% 
+  sort() # three potential answers! the middle one is correct@
+
+
+409*51
