@@ -3,8 +3,9 @@ library(tidyr)
 library(stringr)
 library(lubridate)
 library(purrr)
-
-
+library(tidyr)
+library(readr)
+library(ggplot2)
 
 raw_input <- 'position=< 21459,  32026> velocity=<-2, -3>
 position=<-31718, -42462> velocity=< 3,  4>
@@ -369,10 +370,8 @@ glimpse(raw_input)
 
 input <- raw_input %>% 
   strsplit('\n') %>% 
-  unlist() %>% 
-  strsplit('>..') %>% 
-  unlist()
-
+  unlist() 
+ 
 clean_input <- data.frame(original = input) %>% 
  
   mutate(position_left_right = str_extract(original, '<..[:digit:]+'),
@@ -382,6 +381,79 @@ clean_input <- data.frame(original = input) %>%
   mutate_if(is.character, parse_number) %>% 
   mutate_if(is.character, str_trim)
 
-clean_input %>% 
-  select(original, contains('moving'))
+# final dataset
+final_coord <- clean_input %>% 
+  select(-original) %>% 
+  select(contains('moving'), everything())
+
+
+## get all the x coord
+left_right <- select(final_coord, contains('left'))
+
+for(i in 1:20){
+  
+  new_left_right <- paste0('left_right_t', i)
+#  new_up_down <- paste0('up_down_t', i)
+  last_col <- dim(left_right)[2]
+  
+  left_right[, new_left_right] <- left_right[, last_col] + left_right[, 1]
+  #final_coord[, new_up_down] <- final_coord[, last_col] + final_coord[, 2]
+  
+}
+
+glimpse(left_right)
+
+# get all the y coord
+up_down <- select(final_coord, contains('up'))
+
+for(i in 1:20){
+  
+  new_up_down <- paste0('up_down_t', i)
+  #  new_up_down <- paste0('up_down_t', i)
+  last_col <- dim(up_down)[2]
+  
+  up_down[, new_up_down] <- up_down[, last_col] + left_right[, 1]
+  #final_coord[, new_up_down] <- final_coord[, last_col] + final_coord[, 2]
+  
+}
+
+glimpse(up_down)
+
+### clean coord df's ####
+glimpse(left_right)
+
+# clean x
+long_left_right <- left_right %>% 
+  select(-contains('moving')) %>% 
+  rename(left_right_t0 = position_left_right) %>% 
+  gather(time, x) %>% 
+  mutate(time = str_extract(time, 't[:digit:]+'))
+
+# clean y
+long_up_down <- up_down %>% 
+  select(-contains('moving')) %>% 
+  rename(up_down_t0 = position_up_down) %>% 
+  gather(time_y, y) %>% 
+  mutate(time_y = str_extract(time_y, 't[:digit:]+'))
+
+
+#### put coordinates together ####
+
+all_coord <- cbind(long_left_right, long_up_down) %>% 
+  select(-time_y)
+
+tail(all_coord)
+
+
+## plotting!!!! ####
+
+
+final_coord %>% 
+  ggplot(aes(x = position_left_right, y = position_up_down)) +
+  geom_point()
+
+all_coord %>% 
+  ggplot(aes(x,y)) +
+  geom_point() +
+  facet_wrap(~time)
   
